@@ -2,7 +2,15 @@ import type {GetServerSideProps, NextPage} from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 
-const Home: NextPage = () => {
+interface ProductProps {
+  product: {
+    entityId: number;
+    name: string;
+    plainTextDescription: string;
+  };
+}
+
+const Home: NextPage<ProductProps> = props => {
   return (
     <div className="container py-4">
       <Head>
@@ -65,6 +73,23 @@ const Home: NextPage = () => {
         </div>
       </div>
 
+      <div className="container my-5">
+        <div>
+          <p>
+            <strong>Product Name: </strong>
+            {props.product.name}
+          </p>
+          <p>
+            <strong>Product ID: </strong>
+            {props.product.entityId}
+          </p>
+          <p>
+            <strong>Product Description: </strong>
+            {props.product.plainTextDescription}
+          </p>
+        </div>
+      </div>
+
       <footer className="pt-3 mt-4 text-muted d-flex justify-content-between border-top">
         <div>
           Created by{' '}
@@ -84,8 +109,34 @@ const Home: NextPage = () => {
 };
 
 export const getServerSideProps: GetServerSideProps = async context => {
+  const res = await fetch('https://store-unzvctoo8r-776474.mybigcommerce.com/graphql', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.BIGCOMMERCE_STOREFRONT_API_TOKEN}`,
+    },
+    body: JSON.stringify({
+      query: `{
+      site {
+        product(entityId: 111) {
+          id
+          entityId
+          name
+          plainTextDescription
+        }
+      }
+    }
+    `,
+    }),
+  });
+  const data = await res.json();
+  const product = data.data.site.product;
+  console.log(product);
   return {
-    props: {}, // will be passed to the page component as props
+    props: {
+      product,
+    },
   };
 };
 
