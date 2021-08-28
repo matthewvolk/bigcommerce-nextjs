@@ -187,11 +187,13 @@ const Home: NextPage<Props> = ({graphql}) => {
             return (
               <div key={product.node.entityId} className="col">
                 <div className="card">
-                  <div className="card-img-top">
-                    <img
+                  <div className="d-flex justify-content-around">
+                    <Image
                       src={product.node.images.edges[0].node.urlOriginal}
                       alt="Product Image"
                       className="card-img-top"
+                      width="300"
+                      height="300"
                     />
                   </div>
                   <div className="card-body">
@@ -274,7 +276,7 @@ export const getServerSideProps: GetServerSideProps = async context => {
         $hasLocale: Boolean = false
         $locale: String = "null"
         $entityIds: [Int!]
-        $first: Int = 10
+        $first: Int = 15
         $products: Boolean = true
         $featuredProducts: Boolean = false
         $bestSellingProducts: Boolean = false
