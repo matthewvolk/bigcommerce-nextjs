@@ -1,13 +1,35 @@
 import type {GetServerSideProps, NextPage} from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 
-interface ProductProps {
-  product: {
+interface Product {
+  cursor: string;
+  node: {
     entityId: number;
     name: string;
+    path: string;
+    brand: string;
+    description: string;
     plainTextDescription: string;
+    prices: {
+      price: {
+        value: number;
+        currencyCode: string;
+      };
+      salePrice: number;
+      retailPrice: number;
+    };
+    images: {
+      edges: [];
+    };
+    variants: {};
+    productOptions: {};
   };
+}
+
+interface ProductProps {
+  products: Product[];
 }
 
 const Home: NextPage<ProductProps> = props => {
@@ -34,7 +56,7 @@ const Home: NextPage<ProductProps> = props => {
             This is a server-side rendered example of Next.js using BigCommerce to provide
             e-commerce functionality.
           </p>
-          <Link href="/" passHref>
+          <Link href="#products" passHref>
             <a className="btn btn-dark btn-lg" type="button">
               View Products
             </a>
@@ -50,7 +72,7 @@ const Home: NextPage<ProductProps> = props => {
               This is just an example website for testing. Do not buy anything you see on this
               website.
             </p>
-            <Link href="/" passHref>
+            <Link href="#products" passHref>
               <a className="btn btn-light" type="button">
                 View Products
               </a>
@@ -64,7 +86,7 @@ const Home: NextPage<ProductProps> = props => {
               AGAIN, this is just an example website for testing. Do not buy anything you see on
               this website.
             </p>
-            <Link href="/" passHref>
+            <Link href="#products" passHref>
               <a className="btn btn-dark" type="button">
                 View Products
               </a>
@@ -74,19 +96,37 @@ const Home: NextPage<ProductProps> = props => {
       </div>
 
       <div className="container my-5">
-        <div>
-          <p>
-            <strong>Product Name: </strong>
-            {props.product.name}
-          </p>
-          <p>
-            <strong>Product ID: </strong>
-            {props.product.entityId}
-          </p>
-          <p>
-            <strong>Product Description: </strong>
-            {props.product.plainTextDescription}
-          </p>
+        <h2 className="display-5 fw-bold border-bottom" id="products">
+          Products
+        </h2>
+        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mt-5">
+          {props.products.map(product => {
+            return (
+              <div key={product.node.entityId} className="col">
+                <div className="card">
+                  <div className="card-img-top">
+                    <img
+                      src={product.node.images.edges[0].node.urlOriginal}
+                      alt="Product Image"
+                      className="card-img-top"
+                    />
+                  </div>
+                  <div className="card-body">
+                    <h5 className="cart-title">{product.node.name}</h5>
+                    <h6 className="card-subtitle mb-2 text-muted">
+                      ${product.node.prices.price.value.toFixed(2)}
+                    </h6>
+                    <p className="card-text">{product.node.plainTextDescription}</p>
+                    <Link href="/" passHref>
+                      <a style={{cursor: 'not-allowed'}} className="btn btn-dark">
+                        Add to Cart
+                      </a>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -117,25 +157,137 @@ export const getServerSideProps: GetServerSideProps = async context => {
       Authorization: `Bearer ${process.env.BIGCOMMERCE_STOREFRONT_API_TOKEN}`,
     },
     body: JSON.stringify({
-      query: `{
-      site {
-        product(entityId: 111) {
-          id
-          entityId
-          name
-          plainTextDescription
+      query: `query getAllProducts(
+        $hasLocale: Boolean = false
+        $locale: String = "null"
+        $entityIds: [Int!]
+        $first: Int = 10
+        $products: Boolean = true
+        $featuredProducts: Boolean = false
+        $bestSellingProducts: Boolean = false
+        $newestProducts: Boolean = false
+      ) {
+        site {
+          products(first: $first, entityIds: $entityIds) @include(if: $products) {
+            ...productConnnection
+          }
+          featuredProducts(first: $first) @include(if: $featuredProducts) {
+            ...productConnnection
+          }
+          bestSellingProducts(first: $first) @include(if: $bestSellingProducts) {
+            ...productConnnection
+          }
+          newestProducts(first: $first) @include(if: $newestProducts) {
+            ...productConnnection
+          }
         }
       }
-    }
+      
+      fragment productConnnection on ProductConnection {
+        pageInfo {
+          startCursor
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            ...productInfo
+          }
+        }
+      }
+      
+      fragment productInfo on Product {
+        entityId
+        name
+        path
+        brand {
+          entityId
+        }
+        description
+        plainTextDescription
+        prices {
+          ...productPrices
+        }
+        images {
+          edges {
+            node {
+              urlOriginal
+              altText
+              isDefault
+            }
+          }
+        }
+        variants {
+          edges {
+            node {
+              entityId
+              defaultImage {
+                urlOriginal
+                altText
+                isDefault
+              }
+            }
+          }
+        }
+        productOptions {
+          edges {
+            node {
+              __typename
+              entityId
+              displayName
+              ...multipleChoiceOption
+            }
+          }
+        }
+        localeMeta: metafields(namespace: $locale, keys: ["name", "description"])
+          @include(if: $hasLocale) {
+          edges {
+            node {
+              key
+              value
+            }
+          }
+        }
+      }
+      
+      fragment multipleChoiceOption on MultipleChoiceOption {
+        values {
+          edges {
+            node {
+              label
+              ...swatchOption
+            }
+          }
+        }
+      }
+      
+      fragment productPrices on Prices {
+        price {
+          value
+          currencyCode
+        }
+        salePrice {
+          value
+          currencyCode
+        }
+        retailPrice {
+          value
+          currencyCode
+        }
+      }
+      
+      fragment swatchOption on SwatchOptionValue {
+        isDefault
+        hexColors
+      }
     `,
     }),
   });
   const data = await res.json();
-  const product = data.data.site.product;
-  console.log(product);
+  const products = data.data.site.products.edges;
   return {
     props: {
-      product,
+      products,
     },
   };
 };
