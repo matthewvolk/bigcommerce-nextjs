@@ -3,36 +3,119 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 
-interface Product {
-  cursor: string;
-  node: {
+interface LocaleMetaNode {
+  key: string;
+  value: string;
+}
+
+interface LocaleMetaEdge {
+  node: LocaleMetaNode;
+}
+
+interface ProductOptionValueNode {
+  label: string;
+  isDefault: boolean;
+  hexColors: string[];
+}
+
+interface ProductOptionValueEdge {
+  node: ProductOptionValueNode;
+}
+
+interface ProductOptionNode {
+  __typename: string;
+  entityId: number;
+  displayName: string;
+  values: ProductOptionValueEdge[];
+}
+
+interface ProductOptionEdge {
+  node: ProductOptionNode;
+}
+
+interface VariantNode {
+  entityId: number;
+  defaultImage: ImageNode;
+}
+
+interface VariantEdge {
+  node: VariantNode;
+}
+
+interface ImageNode {
+  urlOriginal: string;
+  altText: string;
+  isDefault: boolean;
+}
+
+interface ImageEdge {
+  node: ImageNode;
+}
+
+interface Money {
+  value: number;
+  currencyCode: string;
+}
+
+interface ProductPrices {
+  price: Money;
+  salePrice: Money;
+  retailPrice: Money;
+}
+
+interface ProductNode {
+  entityId: number;
+  name: string;
+  path: string;
+  brand: {
     entityId: number;
-    name: string;
-    path: string;
-    brand: string;
-    description: string;
-    plainTextDescription: string;
-    prices: {
-      price: {
-        value: number;
-        currencyCode: string;
-      };
-      salePrice: number;
-      retailPrice: number;
-    };
-    images: {
-      edges: [];
-    };
-    variants: {};
-    productOptions: {};
+  };
+  description: string;
+  plainTextDescription: string;
+  prices: ProductPrices;
+  images: {
+    edges: ImageEdge[];
+  };
+  variants: {
+    edges: VariantEdge[];
+  };
+  productOptions: {
+    edges: ProductOptionEdge[];
+  };
+  localeMeta: {
+    edges: LocaleMetaEdge[];
   };
 }
 
-interface ProductProps {
-  products: Product[];
+interface ProductEdge {
+  cursor: string;
+  node: ProductNode;
 }
 
-const Home: NextPage<ProductProps> = props => {
+interface PageInfo {
+  startCursor: string;
+  endCursor: string;
+}
+
+interface ProductConnection {
+  pageInfo: PageInfo;
+  edges: ProductEdge[];
+}
+
+interface Site {
+  products: ProductConnection;
+  featuredProducts: ProductConnection;
+  bestSellingProducts: ProductConnection;
+  newestProducts: ProductConnection;
+}
+
+interface Props {
+  graphql: {
+    site: Site;
+  };
+}
+
+const Home: NextPage<Props> = ({graphql}) => {
   return (
     <div className="container py-4">
       <Head>
@@ -43,8 +126,8 @@ const Home: NextPage<ProductProps> = props => {
 
       <header className="pb-3 mb-4 border-bottom">
         <Link href="/" passHref>
-          <a className="d-flex align-items-center text-dark">
-            <span className="fs-5 fw-bolder">Home</span>
+          <a className="d-flex align-items-center text-dark text-decoration-none">
+            <span className="fs-5 fw-bolder">BigCommerce + Next.js</span>
           </a>
         </Link>
       </header>
@@ -100,7 +183,7 @@ const Home: NextPage<ProductProps> = props => {
           Products
         </h2>
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mt-5">
-          {props.products.map(product => {
+          {graphql.site.products.edges.map(product => {
             return (
               <div key={product.node.entityId} className="col">
                 <div className="card">
@@ -129,6 +212,36 @@ const Home: NextPage<ProductProps> = props => {
           })}
         </div>
       </div>
+
+      <nav aria-label="Page navigation example">
+        <ul className="pagination justify-content-center">
+          <li className="page-item disabled">
+            <a className="page-link" href="#" tabIndex={-1} aria-disabled="true">
+              Previous
+            </a>
+          </li>
+          <li className="page-item">
+            <a className="page-link" href="#">
+              1
+            </a>
+          </li>
+          <li className="page-item">
+            <a className="page-link" href="#">
+              2
+            </a>
+          </li>
+          <li className="page-item">
+            <a className="page-link" href="#">
+              3
+            </a>
+          </li>
+          <li className="page-item">
+            <a className="page-link" href="#">
+              Next
+            </a>
+          </li>
+        </ul>
+      </nav>
 
       <footer className="pt-3 mt-4 text-muted d-flex justify-content-between border-top">
         <div>
@@ -283,11 +396,11 @@ export const getServerSideProps: GetServerSideProps = async context => {
     `,
     }),
   });
-  const data = await res.json();
-  const products = data.data.site.products.edges;
+  const {data: graphql} = await res.json();
+  console.log(graphql.site.products.edges);
   return {
     props: {
-      products,
+      graphql,
     },
   };
 };
