@@ -1,7 +1,9 @@
 import type {GetServerSideProps, NextPage} from 'next';
+import type {MouseEvent} from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
+import AddToCart from '../components/addToCart';
 
 interface LocaleMetaNode {
   key: string;
@@ -116,6 +118,11 @@ interface Props {
 }
 
 const Home: NextPage<Props> = ({graphql}) => {
+  const addToCart = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    console.log((e.target as HTMLElement).id);
+  };
+
   return (
     <div className="container py-4">
       <Head>
@@ -202,11 +209,13 @@ const Home: NextPage<Props> = ({graphql}) => {
                       ${product.node.prices.price.value.toFixed(2)}
                     </h6>
                     <p className="card-text">{product.node.plainTextDescription}</p>
-                    <Link href="/" passHref>
-                      <a style={{cursor: 'not-allowed'}} className="btn btn-dark">
-                        Add to Cart
-                      </a>
-                    </Link>
+                    <AddToCart
+                      entityId={product.node.entityId}
+                      renderButton={
+                        product.node.variants.edges.length <= 1 &&
+                        !product.node.productOptions.edges.length
+                      }
+                    />
                   </div>
                 </div>
               </div>
@@ -399,7 +408,6 @@ export const getServerSideProps: GetServerSideProps = async context => {
     }),
   });
   const {data: graphql} = await res.json();
-  console.log(graphql.site.products.edges);
   return {
     props: {
       graphql,
