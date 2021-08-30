@@ -1,5 +1,4 @@
 import type {GetServerSideProps, NextPage} from 'next';
-import type {MouseEvent} from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -118,11 +117,6 @@ interface Props {
 }
 
 const Home: NextPage<Props> = ({graphql}) => {
-  const addToCart = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    console.log((e.target as HTMLElement).id);
-  };
-
   return (
     <div className="container py-4">
       <Head>
