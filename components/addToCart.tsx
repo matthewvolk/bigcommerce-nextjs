@@ -1,6 +1,5 @@
 import React from 'react';
 import type {MouseEvent} from 'react';
-import fetchStoreApi from '../lib/fetchStoreApi';
 
 const AddToCart: React.FC<{entityId: number; renderButton: boolean}> = ({
   entityId,
@@ -13,25 +12,11 @@ const AddToCart: React.FC<{entityId: number; renderButton: boolean}> = ({
     setAdded(false);
     setDisable(true);
     e.preventDefault();
-    const res = await fetchStoreApi('/v3/carts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        line_items: [
-          {
-            quantity: 1,
-            product_id: (e.target as HTMLElement).id,
-          },
-        ],
-        channel_id: 776474,
-      }),
-    });
-    console.log(res);
-    setDisable(false);
-    setAdded(true);
+    setTimeout(() => {
+      console.log(`Added Product ${(e.target as HTMLElement).id} to cart!`);
+      setDisable(false);
+      setAdded(true);
+    }, 1000);
   };
 
   if (renderButton) {
