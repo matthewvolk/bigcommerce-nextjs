@@ -1,10 +1,14 @@
 import React from 'react';
 import type {MouseEvent} from 'react';
 
-const AddToCart: React.FC<{entityId: number; renderButton: boolean}> = ({
-  entityId,
-  renderButton,
-}) => {
+const AddToCart: React.FC<{
+  entityId: number;
+  renderButton: boolean;
+  cartId: string;
+  setCartId: React.Dispatch<React.SetStateAction<string>>;
+  checkoutUrl: string;
+  setCheckoutUrl: React.Dispatch<React.SetStateAction<string>>;
+}> = ({entityId, renderButton, cartId, setCartId, checkoutUrl, setCheckoutUrl}) => {
   const [disable, setDisable] = React.useState(false);
   const [added, setAdded] = React.useState(false);
 
@@ -12,11 +16,17 @@ const AddToCart: React.FC<{entityId: number; renderButton: boolean}> = ({
     setAdded(false);
     setDisable(true);
     e.preventDefault();
-    setTimeout(() => {
-      console.log(`Added Product ${(e.target as HTMLElement).id} to cart!`);
-      setDisable(false);
-      setAdded(true);
-    }, 1000);
+    const productId = (e.target as HTMLElement).id;
+    const data = {product_id: productId, cartId: cartId};
+    const res = await fetch('/api/cart', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    const resData = await res.json();
+    setCartId(resData.cartId);
+    setCheckoutUrl(resData.url);
+    setDisable(false);
+    setAdded(true);
   };
 
   if (renderButton) {
@@ -31,9 +41,9 @@ const AddToCart: React.FC<{entityId: number; renderButton: boolean}> = ({
           {disable ? 'Adding to Cart...' : 'Add to Cart'}
         </button>
         {added && (
-          <div className="fw-bold" style={{color: 'green'}}>
-            Added!
-          </div>
+          <a className="fw-bold" href={checkoutUrl} target="_blank" rel="noreferrer">
+            Checkout
+          </a>
         )}
       </div>
     );
@@ -42,7 +52,7 @@ const AddToCart: React.FC<{entityId: number; renderButton: boolean}> = ({
     return (
       <div className="d-flex justify-content-between align-items-baseline">
         <button disabled className="btn btn-dark">
-          Choose Options
+          Not Available
         </button>
       </div>
     );

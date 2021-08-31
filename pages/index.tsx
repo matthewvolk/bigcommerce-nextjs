@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import AddToCart from '../components/addToCart';
+import React from 'react';
 
 interface LocaleMetaNode {
   key: string;
@@ -67,6 +68,21 @@ interface ProductPrices {
 interface ProductNode {
   entityId: number;
   name: string;
+  sku: string;
+  inventory: {
+    isInStock: boolean;
+    hasVariantInventory: boolean;
+    aggregated: {
+      availableToSell: number;
+      warningLevel: number;
+    };
+  };
+  minPurchaseQuantity: number;
+  maxPurchaseQuantity: number;
+  availabilityV2: {
+    status: string;
+    description: string;
+  };
   path: string;
   brand: {
     entityId: number;
@@ -117,6 +133,8 @@ interface Props {
 }
 
 const Home: NextPage<Props> = ({graphql}) => {
+  const [cartId, setCartId] = React.useState('');
+  const [checkoutUrl, setCheckoutUrl] = React.useState('');
   return (
     <div className="container py-4">
       <Head>
@@ -199,16 +217,27 @@ const Home: NextPage<Props> = ({graphql}) => {
                   </div>
                   <div className="card-body">
                     <h5 className="cart-title">{product.node.name}</h5>
-                    <h6 className="card-subtitle mb-2 text-muted">
-                      ${product.node.prices.price.value.toFixed(2)}
-                    </h6>
+                    <div className="card-subtitle mb-2 text-muted">
+                      <h6>
+                        <strong>Price: </strong>${product.node.prices.price.value.toFixed(2)}
+                      </h6>
+                      <h6>
+                        <strong>SKU: </strong>
+                        {product.node.sku}
+                      </h6>
+                    </div>
                     <p className="card-text">{product.node.plainTextDescription}</p>
                     <AddToCart
                       entityId={product.node.entityId}
                       renderButton={
                         product.node.variants.edges.length <= 1 &&
-                        !product.node.productOptions.edges.length
+                        !product.node.productOptions.edges.length &&
+                        product.node.inventory.isInStock
                       }
+                      cartId={cartId}
+                      setCartId={setCartId}
+                      checkoutUrl={checkoutUrl}
+                      setCheckoutUrl={setCheckoutUrl}
                     />
                   </div>
                 </div>
@@ -316,6 +345,21 @@ export const getServerSideProps: GetServerSideProps = async context => {
       
       fragment productInfo on Product {
         entityId
+        sku
+        inventory {
+          isInStock
+          hasVariantInventory
+          aggregated {
+            availableToSell
+            warningLevel
+          }
+        }
+        minPurchaseQuantity
+        maxPurchaseQuantity
+        availabilityV2 {
+          status
+          description
+        }
         name
         path
         brand {
